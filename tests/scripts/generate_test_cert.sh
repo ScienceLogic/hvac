@@ -1,20 +1,28 @@
 #!/bin/bash
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 
-openssl genrsa -out "$DIR/../config_files/ca-key.pem" 2048
+# Define directories
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+CONFIG_DIR="$SCRIPT_DIR/../config_files"
 
-openssl req -x509 -new -nodes \
-     -key "$DIR/../config_files/ca-key.pem" -sha256 \
-     -days 1825 -out "$DIR/../config_files/ca-cert.pem" \
-     -config "$DIR/../config_files/ca.cnf"
+# Check if CONFIG_DIR exists
+if [[ ! -d $CONFIG_DIR ]]; then
+    echo "Directory $CONFIG_DIR does not exist"
+    exit 1
+fi
 
-openssl req -x509 -nodes -days 3650 \
-    -newkey rsa:2048 -keyout "$DIR/../config_files/server-key.pem" \
-    -out "$DIR/../config_files/server-cert.pem" -config "$DIR/../config_files/server.cnf"
+# Generate certificates
+openssl genrsa -out "$CONFIG_DIR/ca-key.pem" 2048 >/dev/null 2>&1
 
-openssl req -new -sha256 -key "$DIR/../config_files/server-key.pem" \
-    -out "$DIR/../config_files/server-cert.csr" -config "$DIR/../config_files/server.cnf"
+openssl req -x509 -new -nodes -key "$CONFIG_DIR/ca-key.pem" -sha256 -days 1825 \
+     -out "$CONFIG_DIR/ca-cert.pem" -config "$CONFIG_DIR/ca.cnf" >/dev/null 2>&1
 
-openssl req -x509 -nodes -days 3650 \
-    -newkey rsa:2048 -keyout "$DIR/../config_files/client-key.pem" \
-    -out "$DIR/../config_files/client-cert.pem" -config "$DIR/../config_files/client.cnf"
+openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
+    -keyout "$CONFIG_DIR/server-key.pem" -out "$CONFIG_DIR/server-cert.pem" \
+    -config "$CONFIG_DIR/server.cnf" >/dev/null 2>&1
+
+openssl req -new -sha256 -key "$CONFIG_DIR/server-key.pem" \
+    -out "$CONFIG_DIR/server-cert.csr" -config "$CONFIG_DIR/server.cnf" >/dev/null 2>&1
+
+openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
+    -keyout "$CONFIG_DIR/client-key.pem" -out "$CONFIG_DIR/client-cert.pem" \
+    -config "$CONFIG_DIR/client.cnf" >/dev/null 2>&1
